@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "name": "网关混合仿真",
+  "description": "同时运行 MQTT 上报、Modbus 从站设备、Modbus 主站轮询，演示多协议多实例。",
+  "instances": [
+    {
+      "name": "edge-mqtt",
+      "type": "mqtt_client",
+      "mqtt": {
+        "host": "127.0.0.1",
+        "port": 1883,
+        "publishes": [
+          {
+            "name": "uplink",
+            "topic": "edge/${name}/up",
+            "interval_ms": 1500,
+            "jitter_ms": 100,
+            "payload_kind": "json",
+            "fields": [
+              {"name": "seq", "type": "int", "mode": "increment", "start": 1, "step": 1, "max": 1000000, "wrap": false},
+              {"name": "rssi", "type": "int", "mode": "random", "min": -90, "max": -40, "decimals": 0},
+              {"name": "ts", "type": "string", "mode": "timestamp"}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "plc-slave",
+      "type": "modbus_tcp_slave",
+      "modbus_slave": {
+        "host": "127.0.0.1",
+        "port": 5020,
+        "registers": [
+          {
+            "name": "level",
+            "table": "holding_registers",
+            "address": 0,
+            "data_type": "uint16",
+            "interval_ms": 300,
+            "field": {"name": "level", "type": "uint16", "mode": "walk", "min": 10, "max": 90, "start": 40, "step": 3, "decimals": 0}
+          }
+        ]
+      }
+    },
+    {
+      "name": "plc-master",
+      "type": "modbus_tcp_client",
+      "modbus_client": {
+        "host": "127.0.0.1",
+        "port": 5020,
+        "operations": [
+          {
+            "name": "poll-level",
+            "function": "read_holding_registers",
+            "address": 0,
+            "count": 1,
+            "interval_ms": 500
+          }
+        ]
+      }
+    }
+  ]
+}

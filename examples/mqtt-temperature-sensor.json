@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "name": "MQTT 温湿度传感器",
+  "description": "单个 MQTT 客户端，按随机游走发布温湿度遥测，并订阅命令主题。",
+  "instances": [
+    {
+      "name": "workshop-th-01",
+      "type": "mqtt_client",
+      "enabled": true,
+      "note": "将 host 改为你的 Broker 地址后启动。",
+      "mqtt": {
+        "host": "127.0.0.1",
+        "port": 1883,
+        "protocol": "MQTTv311",
+        "birth_topic": "devices/${name}/status",
+        "birth_payload": "{\"online\": true}",
+        "lwt_topic": "devices/${name}/status",
+        "lwt_payload": "{\"online\": false}",
+        "publishes": [
+          {
+            "enabled": true,
+            "name": "telemetry",
+            "topic": "devices/${name}/telemetry",
+            "qos": 0,
+            "retain": false,
+            "interval_ms": 1000,
+            "jitter_ms": 50,
+            "payload_kind": "json",
+            "text_template": "",
+            "fields": [
+              {
+                "name": "temperature",
+                "type": "float",
+                "mode": "walk",
+                "min": 18,
+                "max": 28,
+                "start": 22,
+                "step": 0.3,
+                "decimals": 1
+              },
+              {
+                "name": "humidity",
+                "type": "float",
+                "mode": "random",
+                "min": 40,
+                "max": 70,
+                "decimals": 1
+              },
+              {
+                "name": "status",
+                "type": "string",
+                "mode": "enum",
+                "values": ["ok", "warn", "fault"],
+                "weights": [0.9, 0.08, 0.02]
+              },
+              {
+                "name": "ts",
+                "type": "string",
+                "mode": "timestamp"
+              }
+            ]
+          }
+        ],
+        "subscriptions": [
+          {
+            "enabled": true,
+            "topic": "devices/${name}/cmd/#",
+            "qos": 0
+          }
+        ]
+      }
+    }
+  ]
+}

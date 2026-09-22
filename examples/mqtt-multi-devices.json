@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "name": "多 MQTT 客户端同时仿真",
+  "description": "三个独立 MQTT 客户端并发发布，演示多实例。",
+  "instances": [
+    {
+      "name": "line-a-sensor",
+      "type": "mqtt_client",
+      "mqtt": {
+        "host": "127.0.0.1",
+        "port": 1883,
+        "publishes": [
+          {
+            "name": "telemetry",
+            "topic": "factory/line-a/${name}",
+            "interval_ms": 800,
+            "payload_kind": "json",
+            "fields": [
+              {"name": "rpm", "type": "int", "mode": "walk", "min": 800, "max": 1600, "start": 1200, "step": 20, "decimals": 0},
+              {"name": "ts", "type": "string", "mode": "timestamp"}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "line-b-sensor",
+      "type": "mqtt_client",
+      "mqtt": {
+        "host": "127.0.0.1",
+        "port": 1883,
+        "publishes": [
+          {
+            "name": "telemetry",
+            "topic": "factory/line-b/${name}",
+            "interval_ms": 1200,
+            "payload_kind": "json",
+            "fields": [
+              {"name": "current", "type": "float", "mode": "sine", "min": 4.5, "max": 6.2, "period": 30, "decimals": 2},
+              {"name": "ts", "type": "string", "mode": "timestamp"}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "env-gateway",
+      "type": "mqtt_client",
+      "mqtt": {
+        "host": "127.0.0.1",
+        "port": 1883,
+        "publishes": [
+          {
+            "name": "env",
+            "topic": "factory/env/${name}",
+            "interval_ms": 2000,
+            "payload_kind": "json",
+            "fields": [
+              {"name": "co2", "type": "int", "mode": "gaussian", "min": 400, "max": 1200, "mean": 650, "std": 40, "decimals": 0},
+              {"name": "ts", "type": "string", "mode": "timestamp"}
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

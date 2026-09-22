@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "devicesim"
+version = "1.0.0"
+description = "MQTT / Modbus TCP 多实例设备仿真工具"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "DeviceSim" }]
+keywords = ["mqtt", "modbus", "simulator", "iot", "scada"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Topic :: System :: Emulators",
+]
+dependencies = [
+    "nicegui>=3.0.0",
+    "paho-mqtt>=2.1.0",
+    "pymodbus>=3.15.0,<4",
+    "pydantic>=2.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pyinstaller>=6.6",
+]
+desktop = [
+    "pywebview>=5.0",
+]
+
+[project.scripts]
+devicesim = "devicesim.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+devicesim = ["examples/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "name": "Modbus TCP 从站设备",
+  "description": "仿真一台 Modbus TCP 设备（从站），温度/湿度/运行/报警按规则变化。可用本工具的客户端或其它主站读取。",
+  "instances": [
+    {
+      "name": "pump-101",
+      "type": "modbus_tcp_slave",
+      "note": "监听 5020。保持寄存器 0=温度x10，1=湿度x10；线圈 0=运行；离散量 0=报警。",
+      "modbus_slave": {
+        "host": "0.0.0.0",
+        "port": 5020,
+        "unit_id": 1,
+        "identity_vendor": "DeviceSim",
+        "identity_product": "Virtual Pump",
+        "registers": [
+          {
+            "name": "temperature_x10",
+            "table": "holding_registers",
+            "address": 0,
+            "data_type": "int16",
+            "interval_ms": 500,
+            "field": {
+              "name": "temperature_x10",
+              "type": "int16",
+              "mode": "walk",
+              "min": 180,
+              "max": 280,
+              "start": 220,
+              "step": 2,
+              "decimals": 0
+            }
+          },
+          {
+            "name": "humidity_x10",
+            "table": "holding_registers",
+            "address": 1,
+            "data_type": "uint16",
+            "interval_ms": 500,
+            "field": {
+              "name": "humidity_x10",
+              "type": "uint16",
+              "mode": "random",
+              "min": 400,
+              "max": 700,
+              "decimals": 0
+            }
+          },
+          {
+            "name": "flow",
+            "table": "input_registers",
+            "address": 0,
+            "data_type": "float32",
+            "byte_order": "ABCD",
+            "interval_ms": 400,
+            "field": {
+              "name": "flow",
+              "type": "float32",
+              "mode": "sine",
+              "min": 1.2,
+              "max": 3.8,
+              "period": 20,
+              "decimals": 2
+            }
+          },
+          {
+            "name": "running",
+            "table": "coils",
+            "address": 0,
+            "data_type": "bool",
+            "interval_ms": 5000,
+            "field": {"name": "running", "type": "bool", "mode": "enum", "values": [true]}
+          },
+          {
+            "name": "alarm",
+            "table": "discrete_inputs",
+            "address": 0,
+            "data_type": "bool",
+            "interval_ms": 3000,
+            "field": {"name": "alarm", "type": "bool", "mode": "random", "probability": 0.05}
+          }
+        ]
+      }
+    }
+  ]
+}
