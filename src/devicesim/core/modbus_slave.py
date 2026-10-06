@@ -14,7 +14,7 @@ from pymodbus.simulator import SimData, SimDevice
 
 from devicesim.core.data_gen import FieldGenerator, encode_modbus
 from devicesim.core.events import InstanceStats, SimEvent
-from devicesim.core.models import ModbusTable, ModbusTcpSlaveConfig, SimInstance
+from devicesim.core.models import ModbusTable, ModbusTcpSlaveConfig, SimInstance, as_uint
 
 EventCb = Callable[[SimEvent], None]
 
@@ -107,7 +107,12 @@ class ModbusTcpSlaveRunner:
             ),
         )
         address = (cfg.host, int(cfg.port))
-        self._server = ModbusTcpServer(context=device, identity=identity, address=address)
+        self._server = ModbusTcpServer(
+            context=device,
+            identity=identity,
+            address=address,
+            trace_packet=self._trace_packet,
+        )
         await self._server.serve_forever(background=True)
         self.stats.connected = True
         self._info("listen", f"从站监听 {cfg.host}:{cfg.port} unit={cfg.unit_id}")
@@ -127,16 +132,21 @@ class ModbusTcpSlaveRunner:
             for reg, gen in self._gens:
                 if now < due.get(reg.name, 0):
                     continue
-                value = gen.next({"name": self.instance.name, "id": self.instance.id})
-                encoded = encode_modbus(value, reg.data_type, reg.byte_order)
-                bool_mode = reg.data_type.value == "bool"
-                payload: list[Any] = [bool(v) for v in encoded] if bool_mode else encoded
-                await self._write_value(reg.table, reg.address, payload)
-                self.stats.sent += 1
-                self.stats.last_activity = time.time()
-                self._emit("info", "generate", f"{reg.table.value}[{reg.address}] {reg.name}={value}", value)
-                jitter = random.uniform(-reg.jitter_ms, reg.jitter_ms) if reg.jitter_ms else 0
-                due[reg.name] = now + max(0.05, (reg.interval_ms + jitter) / 1000)
+                try:
+                    value = gen.next({"name": self.instance.name, "id": self.instance.id})
+                    encoded = encode_modbus(value, reg.data_type, reg.byte_order)
+                    bool_mode = reg.data_type.value == "bool"
+                    payload: list[Any] = [bool(v) for v in encoded] if bool_mode else encoded
+                    await self._write_value(reg.table, as_uint(reg.address), payload)
+                    self.stats.sent += 1
+                    self.stats.last_activity = time.time()
+                    jitter_ms = reg.jitter_ms if isinstance(reg.jitter_ms, (int, float)) else 0
+                    interval_ms = reg.interval_ms if isinstance(reg.interval_ms, (int, float)) else 1000
+                    jitter = random.uniform(-jitter_ms, jitter_ms) if jitter_ms else 0
+                    due[reg.name] = now + max(0.05, (interval_ms + jitter) / 1000)
+                except Exception as exc:
+                    self._error(f"刷新寄存器 {reg.name} 失败: {exc}")
+                    due[reg.name] = now + 1
             await asyncio.sleep(0.05)
 
     async def _write_value(self, table: ModbusTable, address: int, values: list[Any]) -> None:
@@ -150,6 +160,28 @@ class ModbusTcpSlaveRunner:
                 self._error(f"写入数据区失败 {table.value}[{address}]: {err}")
         except Exception as exc:
             self._error(f"写入数据区失败 {table.value}[{address}]: {exc}")
+
+    def _trace_packet(self, sending: bool, data: bytes) -> bytes:
+        if not sending:
+            frame = self._leading_tcp_frame(data)
+            if frame:
+                text = frame.hex(" ").upper()
+                self.stats.received += 1
+                self.stats.last_activity = time.time()
+                self._emit("info", "recv", f"收到 {text}", text)
+        return data
+
+    @staticmethod
+    def _leading_tcp_frame(data: bytes) -> bytes | None:
+        """取出缓冲区开头的一帧完整 Modbus TCP 报文。"""
+        if len(data) < 8 or int.from_bytes(data[2:4], "big") != 0:
+            return None
+        msg_len = int.from_bytes(data[4:6], "big") + 6
+        if msg_len == 8 and len(data) == 9:
+            msg_len = 9
+        if msg_len < 8 or len(data) < msg_len:
+            return None
+        return data[:msg_len]
 
     def _info(self, kind: str, message: str) -> None:
         self._emit("info", kind, message)

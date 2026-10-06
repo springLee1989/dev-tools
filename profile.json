@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "name": "示例：温湿度设备",
+  "description": "一个 MQTT 传感器、一个 Modbus 从站、一个 Modbus 主站轮询示例。",
+  "instances": [
+    {
+      "id": "4df0e8982086",
+      "name": "mb-device-1",
+      "type": "modbus_tcp_slave",
+      "enabled": true,
+      "note": "",
+      "mqtt": null,
+      "modbus_client": null,
+      "modbus_slave": {
+        "host": "0.0.0.0",
+        "port": 502,
+        "unit_id": 1,
+        "coils_size": 2000,
+        "discrete_inputs_size": 2000,
+        "holding_registers_size": 1992,
+        "input_registers_size": 2000,
+        "identity_vendor": "DeviceSim",
+        "identity_product": "Virtual Device",
+        "identity_version": "1.0.0",
+        "registers": [
+          {
+            "enabled": true,
+            "name": "temperature_x10",
+            "table": "holding_registers",
+            "address": 500,
+            "data_type": "int16",
+            "byte_order": "ABCD",
+            "interval_ms": 500,
+            "jitter_ms": 0,
+            "field": {
+              "name": "temperature_x10",
+              "type": "uint16",
+              "mode": "random",
+              "value": null,
+              "min": 0.0,
+              "max": 1000.0,
+              "mean": 1.0,
+              "std": 2.0,
+              "start": 220.0,
+              "step": 2.0,
+              "period": 60.0,
+              "decimals": 0,
+              "values": [],
+              "weights": [],
+              "template": "",
+              "probability": 0.5,
+              "wrap": true,
+              "hex_bytes": 4
+            }
+          },
+          {
+            "enabled": true,
+            "name": "humidity_x10",
+            "table": "holding_registers",
+            "address": 501,
+            "data_type": "uint16",
+            "byte_order": "ABCD",
+            "interval_ms": 500,
+            "jitter_ms": 0,
+            "field": {
+              "name": "humidity_x10",
+              "type": "uint16",
+              "mode": "random",
+              "value": null,
+              "min": 0.0,
+              "max": 1000.0,
+              "mean": null,
+              "std": null,
+              "start": 0.0,
+              "step": 1.0,
+              "period": 60.0,
+              "decimals": 0,
+              "values": [],
+              "weights": [],
+              "template": "",
+              "probability": 0.5,
+              "wrap": true,
+              "hex_bytes": 4
+            }
+          },
+          {
+            "enabled": true,
+            "name": "reg-3",
+            "table": "holding_registers",
+            "address": 598,
+            "data_type": "bool",
+            "byte_order": "ABCD",
+            "interval_ms": 1000,
+            "jitter_ms": 0,
+            "field": {
+              "name": "value",
+              "type": "bool",
+              "mode": "const",
+              "value": 1,
+              "min": 0.0,
+              "max": 1.0,
+              "mean": null,
+              "std": null,
+              "start": 0.0,
+              "step": 0.0,
+              "period": 60.0,
+              "decimals": 0,
+              "values": [
+                "0",
+                "1"
+              ],
+              "weights": [],
+              "template": "1",
+              "probability": 0.5,
+              "wrap": true,
+              "hex_bytes": 4
+            }
+          },
+          {
+            "enabled": true,
+            "name": "reg-4",
+            "table": "holding_registers",
+            "address": 502,
+            "data_type": "bool",
+            "byte_order": "ABCD",
+            "interval_ms": 1000,
+            "jitter_ms": 0,
+            "field": {
+              "name": "value",
+              "type": "bool",
+              "mode": "const",
+              "value": 1,
+              "min": 0.0,
+              "max": 1.0,
+              "mean": null,
+              "std": null,
+              "start": 0.0,
+              "step": 1.0,
+              "period": 60.0,
+              "decimals": 0,
+              "values": [
+                "1"
+              ],
+              "weights": [],
+              "template": "ture",
+              "probability": 0.5,
+              "wrap": true,
+              "hex_bytes": 4
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

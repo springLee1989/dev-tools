@@ -14,6 +14,7 @@ from devicesim.core.models import (
     MqttPublishRule,
     MqttSubscription,
     SimInstance,
+    as_uint,
 )
 
 MODE_LABELS = {
@@ -227,7 +228,9 @@ def render_modbus_slave(inst: SimInstance, on_change) -> None:
                 ui.switch("启用").bind_value(reg, "enabled")
                 ui.input("名称").bind_value(reg, "name").classes("w-36")
                 ui.select(table_labels, label="数据区").bind_value(reg, "table").classes("w-52")
-                ui.number("地址", format="%.0f").bind_value(reg, "address").classes("w-24")
+                ui.number("地址", format="%.0f", min=0, precision=0).bind_value(
+                    reg, "address", forward=as_uint
+                ).classes("w-24")
                 ui.select(TYPE_LABELS, label="类型").bind_value(reg, "data_type").classes("w-32")
                 ui.select({b.value: b.value for b in ByteOrder}, label="字节序").bind_value(reg, "byte_order").classes(
                     "w-28"

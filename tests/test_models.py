@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from devicesim.core.engine import Engine
-from devicesim.core.models import InstanceType, Profile, default_profile
+from devicesim.core.models import FieldType, InstanceType, ModbusRegisterDef, Profile, as_uint, default_profile
 
 
 def test_default_profile_roundtrip():
@@ -30,6 +30,19 @@ def test_engine_add_clone_remove():
     engine.remove_instance(a.id)
     assert engine.get_instance(a.id) is None
     assert engine.get_instance(b.id) is not None
+
+
+def test_new_register_address_is_uint():
+    reg = ModbusRegisterDef(name="reg-1", address=12.0)
+    assert reg.address == 12
+    assert isinstance(reg.address, int)
+    assert reg.data_type == FieldType.UINT16
+    assert reg.field.type == FieldType.UINT16
+    loaded = ModbusRegisterDef.model_validate({"name": "reg-2", "address": None})
+    assert loaded.address == 0
+    assert isinstance(loaded.address, int)
+    assert as_uint(3.0) == 3
+    assert isinstance(as_uint(3.0), int)
 
 
 def test_slave_ports_unique():

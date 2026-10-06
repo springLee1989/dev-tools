@@ -4,11 +4,36 @@ import uuid
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 def new_id() -> str:
     return uuid.uuid4().hex[:12]
+
+
+def as_uint(value: Any, *, maximum: int = 65535) -> int:
+    """把界面数字框写入的 float 或空值收成无符号整数。"""
+    if value is None or value == "":
+        return 0
+    number = int(value)
+    if number < 0:
+        return 0
+    if number > maximum:
+        return maximum
+    return number
+
+
+def _uint16_field() -> DataField:
+    return DataField(
+        name="value",
+        type=FieldType.UINT16,
+        mode=GenMode.RANDOM,
+        min=0,
+        max=65535,
+        start=0,
+        decimals=0,
+        value=0,
+    )
 
 
 class InstanceType(str, Enum):
@@ -171,7 +196,12 @@ class ModbusRegisterDef(BaseModel):
     byte_order: ByteOrder = ByteOrder.ABCD
     interval_ms: int = 1000
     jitter_ms: int = 0
-    field: DataField = Field(default_factory=DataField)
+    field: DataField = Field(default_factory=_uint16_field)
+
+    @field_validator("address", mode="before")
+    @classmethod
+    def _address_uint(cls, value: Any) -> int:
+        return as_uint(value)
 
 
 class ModbusTcpSlaveConfig(BaseModel):

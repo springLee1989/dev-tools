@@ -4,6 +4,14 @@ from devicesim.core.data_gen import FieldGenerator, PayloadGenerator, decode_mod
 from devicesim.core.models import ByteOrder, DataField, FieldType, GenMode
 
 
+def test_missing_numeric_value_does_not_crash():
+    field = DataField(name="n", type=FieldType.UINT16, mode=GenMode.CONST, value=None)
+    field.start = None
+    gen = FieldGenerator(field)
+    assert gen.next() == 0
+    assert encode_modbus(None, FieldType.FLOAT32, ByteOrder.ABCD)
+
+
 def test_const_and_cast():
     gen = FieldGenerator(DataField(name="n", type=FieldType.INT16, mode=GenMode.CONST, value=12))
     assert gen.next() == 12

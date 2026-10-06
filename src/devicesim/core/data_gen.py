@@ -44,6 +44,12 @@ def clamp_numeric(value: float, field: DataField) -> float:
     return value
 
 
+def _as_float(value: Any, default: float = 0.0) -> float:
+    if value is None or value == "":
+        return default
+    return float(value)
+
+
 def cast_value(value: Any, field: DataField) -> Any:
     if field.mode == GenMode.TIMESTAMP:
         return value
@@ -59,7 +65,7 @@ def cast_value(value: Any, field: DataField) -> Any:
         if isinstance(value, bytes):
             return value.hex()
         return str(value)
-    number = float(value)
+    number = _as_float(value)
     if field.type in {FieldType.FLOAT, FieldType.FLOAT32}:
         if field.decimals is not None:
             return round(number, field.decimals)
@@ -71,10 +77,10 @@ def cast_value(value: Any, field: DataField) -> Any:
 class FieldGenerator:
     def __init__(self, field: DataField):
         self.field = field
-        self._n = float(field.start)
+        self._n = _as_float(field.start)
         self._t0 = time.monotonic()
         if field.mode == GenMode.WALK:
-            self._n = float(field.start if field.start is not None else (field.min or 0))
+            self._n = _as_float(field.start if field.start is not None else (field.min or 0))
 
     def next(self, ctx: dict[str, Any] | None = None) -> Any:
         ctx = ctx or {}
@@ -192,7 +198,7 @@ def encode_modbus(value: Any, data_type: FieldType, byte_order: ByteOrder) -> li
     elif data_type == FieldType.UINT32:
         raw = struct.pack(">I", int(value) & 0xFFFFFFFF)
     elif data_type in {FieldType.FLOAT, FieldType.FLOAT32}:
-        raw = struct.pack(">f", float(value))
+        raw = struct.pack(">f", _as_float(value))
     else:
         return [int(value) & 0xFFFF]
 
