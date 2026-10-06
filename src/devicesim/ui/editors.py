@@ -38,6 +38,32 @@ def section(title: str):
     ui.label(title).classes("text-sm uppercase tracking-wider text-teal-400 mt-4 mb-2")
 
 
+def format_const(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def parse_const(text: str | None, field_type: FieldType) -> object:
+    """把常量输入框的文本写成字段实际使用的 value。"""
+    raw = (text or "").strip()
+    if raw == "":
+        return None
+    if field_type == FieldType.BOOL:
+        return raw.lower() in {"1", "true", "yes", "on"}
+    if field_type in {FieldType.STRING, FieldType.HEX}:
+        return raw
+    try:
+        number = float(raw)
+    except ValueError:
+        return raw
+    if field_type in {FieldType.FLOAT, FieldType.FLOAT32}:
+        return number
+    return int(round(number))
+
+
 def field_editor(field: DataField, on_delete=None) -> None:
     with ui.card().classes("w-full bg-slate-900/70 border border-slate-700"):
         with ui.row().classes("w-full items-end gap-2 flex-wrap"):
@@ -51,7 +77,13 @@ def field_editor(field: DataField, on_delete=None) -> None:
             if on_delete:
                 ui.button(icon="delete", on_click=on_delete).props("flat dense color=negative")
         with ui.row().classes("w-full items-end gap-2 flex-wrap"):
-            ui.input("常量/模板").bind_value(field, "template").classes("w-64")
+            const_box = ui.input("常量", value=format_const(field.value)).classes("w-40").props("placeholder=1 或 true")
+
+            def _apply_const(e, f=field) -> None:
+                f.value = parse_const(e.value, f.type)
+
+            const_box.on_value_change(_apply_const)
+            ui.input("模板").bind_value(field, "template").classes("w-64")
             ui.input("枚举值(逗号分隔)").classes("w-64").props("placeholder=ok,warn,error").on(
                 "blur",
                 lambda e, f=field: setattr(

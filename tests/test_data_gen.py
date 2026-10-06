@@ -4,6 +4,19 @@ from devicesim.core.data_gen import FieldGenerator, PayloadGenerator, decode_mod
 from devicesim.core.models import ByteOrder, DataField, FieldType, GenMode
 
 
+def test_const_input_parses_into_value():
+    from devicesim.ui.editors import format_const, parse_const
+
+    assert parse_const("1", FieldType.UINT16) == 1
+    assert isinstance(parse_const("1", FieldType.UINT16), int)
+    assert parse_const("1", FieldType.BOOL) is True
+    assert parse_const("true", FieldType.BOOL) is True
+    assert parse_const("0", FieldType.BOOL) is False
+    assert parse_const("", FieldType.UINT16) is None
+    assert format_const(1) == "1"
+    assert format_const(None) == ""
+
+
 def test_missing_numeric_value_does_not_crash():
     field = DataField(name="n", type=FieldType.UINT16, mode=GenMode.CONST, value=None)
     field.start = None
