@@ -23,6 +23,21 @@ def as_uint(value: Any, *, maximum: int = 65535) -> int:
     return number
 
 
+class SimModel(BaseModel):
+    """配置模型。下拉框双向绑定会把枚举写成字符串，这里在赋值时收回到枚举。"""
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if isinstance(value, str):
+            field = self.__class__.model_fields.get(name)
+            annotation = field.annotation if field is not None else None
+            if isinstance(annotation, type) and issubclass(annotation, Enum):
+                try:
+                    value = annotation(value)
+                except ValueError:
+                    pass
+        super().__setattr__(name, value)
+
+
 def _uint16_field() -> DataField:
     return DataField(
         name="value",
@@ -75,7 +90,7 @@ class ByteOrder(str, Enum):
     DCBA = "DCBA"
 
 
-class DataField(BaseModel):
+class DataField(SimModel):
     """单字段生成规则。MQTT JSON 与 Modbus 寄存器共用。"""
 
     name: str = "value"
@@ -100,7 +115,7 @@ class DataField(BaseModel):
     model_config = {"extra": "ignore"}
 
 
-class MqttPublishRule(BaseModel):
+class MqttPublishRule(SimModel):
     enabled: bool = True
     name: str = "telemetry"
     topic: str = "devices/${name}/telemetry"
@@ -113,13 +128,13 @@ class MqttPublishRule(BaseModel):
     fields: list[DataField] = Field(default_factory=list)
 
 
-class MqttSubscription(BaseModel):
+class MqttSubscription(SimModel):
     enabled: bool = True
     topic: str = "devices/${name}/cmd/#"
     qos: int = 0
 
 
-class MqttClientConfig(BaseModel):
+class MqttClientConfig(SimModel):
     host: str = "127.0.0.1"
     port: int = 1883
     client_id: str = ""
@@ -157,7 +172,7 @@ class ModbusFunction(str, Enum):
     WRITE_REGISTERS = "write_registers"
 
 
-class ModbusOperation(BaseModel):
+class ModbusOperation(SimModel):
     enabled: bool = True
     name: str = "poll"
     function: ModbusFunction = ModbusFunction.READ_HOLDING_REGISTERS
@@ -170,7 +185,7 @@ class ModbusOperation(BaseModel):
     fields: list[DataField] = Field(default_factory=list)
 
 
-class ModbusTcpClientConfig(BaseModel):
+class ModbusTcpClientConfig(SimModel):
     host: str = "127.0.0.1"
     port: int = 5020
     unit_id: int = 1
@@ -187,7 +202,7 @@ class ModbusTable(str, Enum):
     INPUT_REGISTERS = "input_registers"
 
 
-class ModbusRegisterDef(BaseModel):
+class ModbusRegisterDef(SimModel):
     enabled: bool = True
     name: str = "reg"
     table: ModbusTable = ModbusTable.HOLDING_REGISTERS
@@ -204,7 +219,7 @@ class ModbusRegisterDef(BaseModel):
         return as_uint(value)
 
 
-class ModbusTcpSlaveConfig(BaseModel):
+class ModbusTcpSlaveConfig(SimModel):
     host: str = "0.0.0.0"
     port: int = 5020
     unit_id: int = 1
@@ -218,7 +233,7 @@ class ModbusTcpSlaveConfig(BaseModel):
     registers: list[ModbusRegisterDef] = Field(default_factory=list)
 
 
-class SimInstance(BaseModel):
+class SimInstance(SimModel):
     id: str = Field(default_factory=new_id)
     name: str = "device-1"
     type: InstanceType = InstanceType.MQTT_CLIENT
@@ -239,7 +254,7 @@ class SimInstance(BaseModel):
         return self
 
 
-class Profile(BaseModel):
+class Profile(SimModel):
     version: int = 1
     name: str = "未命名方案"
     description: str = ""

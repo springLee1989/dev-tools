@@ -14,7 +14,7 @@ from pymodbus.simulator import SimData, SimDevice
 
 from devicesim.core.data_gen import FieldGenerator, encode_modbus
 from devicesim.core.events import InstanceStats, SimEvent
-from devicesim.core.models import ModbusTable, ModbusTcpSlaveConfig, SimInstance, as_uint
+from devicesim.core.models import FieldType, ModbusTable, ModbusTcpSlaveConfig, SimInstance, as_uint
 
 EventCb = Callable[[SimEvent], None]
 
@@ -135,7 +135,7 @@ class ModbusTcpSlaveRunner:
                 try:
                     value = gen.next({"name": self.instance.name, "id": self.instance.id})
                     encoded = encode_modbus(value, reg.data_type, reg.byte_order)
-                    bool_mode = reg.data_type.value == "bool"
+                    bool_mode = reg.data_type == FieldType.BOOL
                     payload: list[Any] = [bool(v) for v in encoded] if bool_mode else encoded
                     await self._write_value(reg.table, as_uint(reg.address), payload)
                     self.stats.sent += 1

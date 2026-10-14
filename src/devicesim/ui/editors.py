@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from enum import Enum
+
 from nicegui import ui
 
 from devicesim.core.models import (
@@ -36,6 +38,13 @@ FN_LABELS = {f.value: f.value for f in ModbusFunction}
 
 def section(title: str):
     ui.label(title).classes("text-sm uppercase tracking-wider text-teal-400 mt-4 mb-2")
+
+
+def enum_label(value: object) -> str:
+    """枚举或被界面写成的同值字符串，都显示成选项文本。"""
+    if isinstance(value, Enum):
+        return str(value.value)
+    return str(value)
 
 
 def format_const(value: object) -> str:
@@ -203,7 +212,7 @@ def render_modbus_client(inst: SimInstance, on_change) -> None:
 
     ui.button("添加操作", icon="add", on_click=add_op).props("outline dense")
     for op in list(cfg.operations):
-        with ui.expansion(f"{op.name}  {op.function.value} @{op.address}", icon="sync").classes("w-full"):
+        with ui.expansion(f"{op.name}  {enum_label(op.function)} @{op.address}", icon="sync").classes("w-full"):
             with ui.row().classes("w-full gap-2 flex-wrap items-end"):
                 ui.switch("启用").bind_value(op, "enabled")
                 ui.input("名称").bind_value(op, "name").classes("w-36")
@@ -255,7 +264,7 @@ def render_modbus_slave(inst: SimInstance, on_change) -> None:
     ui.button("添加寄存器", icon="add", on_click=add_reg).props("outline dense")
     table_labels = {t.value: t.value for t in ModbusTable}
     for reg in list(cfg.registers):
-        with ui.expansion(f"{reg.name}  {reg.table.value}[{reg.address}]", icon="memory").classes("w-full"):
+        with ui.expansion(f"{reg.name}  {enum_label(reg.table)}[{reg.address}]", icon="memory").classes("w-full"):
             with ui.row().classes("w-full gap-2 flex-wrap items-end"):
                 ui.switch("启用").bind_value(reg, "enabled")
                 ui.input("名称").bind_value(reg, "name").classes("w-36")

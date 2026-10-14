@@ -3,7 +3,17 @@ from __future__ import annotations
 import json
 
 from devicesim.core.engine import Engine
-from devicesim.core.models import FieldType, InstanceType, ModbusRegisterDef, Profile, as_uint, default_profile
+from devicesim.core.models import (
+    ByteOrder,
+    FieldType,
+    GenMode,
+    InstanceType,
+    ModbusRegisterDef,
+    ModbusTable,
+    Profile,
+    as_uint,
+    default_profile,
+)
 
 
 def test_default_profile_roundtrip():
@@ -43,6 +53,26 @@ def test_new_register_address_is_uint():
     assert isinstance(loaded.address, int)
     assert as_uint(3.0) == 3
     assert isinstance(as_uint(3.0), int)
+
+
+def test_ui_string_assignment_keeps_register_enums():
+    reg = ModbusRegisterDef(
+        name="reg-5",
+        table=ModbusTable.DISCRETE_INPUTS,
+        data_type=FieldType.BOOL,
+        address=510,
+    )
+    reg.table = "discrete_inputs"
+    reg.data_type = "bool"
+    reg.byte_order = "ABCD"
+    reg.field.type = "bool"
+    reg.field.mode = "random"
+    assert reg.table is ModbusTable.DISCRETE_INPUTS
+    assert reg.data_type is FieldType.BOOL
+    assert reg.byte_order is ByteOrder.ABCD
+    assert reg.field.type is FieldType.BOOL
+    assert reg.field.mode is GenMode.RANDOM
+    assert reg.data_type == FieldType.BOOL
 
 
 def test_slave_ports_unique():
