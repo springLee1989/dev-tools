@@ -2,7 +2,7 @@
 
 PC 端 **MQTT 客户端 / Modbus TCP 客户端 / Modbus TCP 从站** 多实例仿真工具，用来模拟支持 MQTT、Modbus TCP 的设备与主站。
 
-可在 **macOS** 与 **Windows** 上开发、运行，并用 PyInstaller 打成独立应用。
+基于 **Tauri 2（Rust 后端 + React 前端）**，可在 **macOS** 与 **Windows** 上开发、运行并打包为原生桌面应用。
 
 ## 能做什么
 
@@ -15,7 +15,8 @@ PC 端 **MQTT 客户端 / Modbus TCP 客户端 / Modbus TCP 从站** 多实例�
 
 ## 环境
 
-- Python **3.11+**（打包推荐 3.12）
+- Node.js **18+**
+- Rust **1.77+**（推荐通过 [rustup](https://rustup.rs/) 安装）
 - macOS 12+ 或 Windows 10+
 - MQTT 仿真需要可连的 Broker（如 Mosquitto）；Modbus 从站+客户端可在本机互相对打，无需外部设备。
 
@@ -23,31 +24,28 @@ PC 端 **MQTT 客户端 / Modbus TCP 客户端 / Modbus TCP 从站** 多实例�
 
 ```bash
 cd dev-tools
-python3 -m venv .venv
-
-# macOS / Linux
-source .venv/bin/activate
-
-# Windows
-.venv\Scripts\activate
-
-pip install -e ".[dev]"
-devicesim
-```
-
-浏览器会打开 `http://127.0.0.1:18765`（也可加 `--native` 使用系统窗口）：
-
-```bash
-devicesim gui --native
-devicesim gui --profile examples/mqtt-temperature-sensor.json
+npm install
+npm run tauri dev
 ```
 
 无界面批量跑方案：
 
 ```bash
-devicesim run examples/mixed-gateway.json
-devicesim validate examples/modbus-tcp-slave.json
-devicesim schema > profile.schema.json
+# 校验
+cargo run --manifest-path src-tauri/Cargo.toml --bin devicesim-cli -- validate examples/mqtt-temperature-sensor.json
+
+# 运行（Ctrl+C 结束）
+cargo run --manifest-path src-tauri/Cargo.toml --bin devicesim-cli -- run examples/mixed-gateway.json
+
+# 打印 JSON Schema
+cargo run --manifest-path src-tauri/Cargo.toml --bin devicesim-cli -- schema
+```
+
+也可使用 npm 脚本：
+
+```bash
+npm run cli -- validate examples/modbus-tcp-slave.json
+npm run cli -- run examples/mixed-gateway.json
 ```
 
 ## 界面用法（最短路径）
@@ -71,23 +69,29 @@ devicesim schema > profile.schema.json
 
 更细的操作见 [docs/user-guide.md](docs/user-guide.md)，数据规则见 [docs/data-rules.md](docs/data-rules.md)，打包见 [docs/build.md](docs/build.md)。
 
-## 开发与测试
+## 技术架构
 
-```bash
-pytest -q
 ```
+方案 JSON  ──► Engine(Rust) ──► MQTT / Modbus Client / Modbus Slave runners
+                 │
+                 ▼
+            Tauri events ──► React UI（日志 / 状态）
+                 │
+                 └── devicesim-cli（无界面）
+```
+
+- **模型** `src-tauri/src/models.rs`：与既有方案 JSON 兼容的 Serde 结构。
+- **生成器** `src-tauri/src/data_gen.rs`：字段状态机（递增、正弦、游走等）。
+- **运行器**：Tokio 异步任务；GUI 通过 `sim-event` 事件消费日志。
+- **界面** `src/`：React + Vite，经 Tauri commands 调用引擎。
 
 ## 打包
 
 ```bash
-# macOS
-bash scripts/build-macos.sh
-
-# Windows PowerShell
-powershell -ExecutionPolicy Bypass -File scripts/build-windows.ps1
+npm run tauri build
 ```
 
-产物在 `dist/`。GitHub Actions 工作流 `.github/workflows/build.yml` 可在 macOS / Windows runner 上自动出包。
+产物在 `src-tauri/target/release/bundle/`。
 
 ## 协议范围
 

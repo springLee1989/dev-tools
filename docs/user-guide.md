@@ -25,7 +25,7 @@
 - **全部启动 / 全部停止**：只操作「已启用」的实例。
 - **新建**：三种实例的默认模板（带示例字段）。
 - **打开 / 保存**：读写左侧路径指向的 JSON（默认 `~/.devicesim/profile.json`）。
-- **导出**：把当前方案下载到浏览器默认下载目录，便于换机器。
+- **导出**：把当前方案复制到剪贴板，便于换机器。
 - **立即发送/轮询一次**：运行中的 MQTT 发布或 Modbus 客户端操作立刻执行一轮。
 
 ## 3. MQTT 客户端
@@ -70,15 +70,15 @@ JSON 示例字段见 `examples/mqtt-temperature-sensor.json`。
 CI、服务器或长时间烧机可用：
 
 ```bash
-devicesim run examples/mixed-gateway.json --duration 60
+npm run cli -- run examples/mixed-gateway.json --duration 60
 ```
 
 `--duration 0`（默认）表示直到 Ctrl+C。日志打印到标准输出。
 
 ## 7. 方案文件协作
 
-- 用 `devicesim validate path.json` 检查字段。
-- 用 `devicesim schema` 生成 JSON Schema，可供 VS Code 关联。
+- 用 `npm run cli -- validate path.json` 检查字段。
+- 用 `npm run cli -- schema` 生成 JSON Schema，可供 VS Code 关联。
 - 方案可在 macOS 与 Windows 之间直接复制，路径分隔符只出现在 TLS 证书路径里，换系统时注意改一下。
 
 ## 8. 建议的实验室拓扑

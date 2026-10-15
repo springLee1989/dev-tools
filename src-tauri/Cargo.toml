@@ -1,0 +1,51 @@
+[package]
+name = "devicesim"
+version = "1.0.0"
+description = "MQTT / Modbus TCP 多实例设备仿真工具"
+authors = ["DeviceSim"]
+edition = "2021"
+default-run = "devicesim"
+
+[lib]
+name = "devicesim_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "devicesim"
+path = "src/main.rs"
+
+[[bin]]
+name = "devicesim-cli"
+path = "src/bin/cli.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+rumqttc = { version = "0.24", features = ["use-rustls"] }
+tokio-modbus = { version = "0.16", default-features = false, features = ["tcp", "tcp-server"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+rand = "0.8"
+chrono = { version = "0.4", features = ["clock"] }
+parking_lot = "0.12"
+thiserror = "2"
+anyhow = "1"
+hex = "0.4"
+clap = { version = "4", features = ["derive"] }
+schemars = "0.8"
+futures = "0.3"
+bytes = "1"
+regex = "1"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
