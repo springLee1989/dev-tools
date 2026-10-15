@@ -7,9 +7,6 @@ on:
 
 jobs:
   build:
-    # Default GITHUB_TOKEN is read-only; creating/uploading a release needs write.
-    permissions:
-      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -32,12 +29,48 @@ jobs:
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
+
+      - name: Collect installers
+        shell: bash
+        run: |
+          mkdir -p dist
+          find src-tauri/target/release/bundle -type f \( \
+            -name '*.dmg' -o -name '*.msi' -o -name '*.exe' -o -name '*.app.tar.gz' \
+          \) -print -exec cp {} dist/ \;
+          ls -la dist
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeviceSim-${{ matrix.platform }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download installers
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: DeviceSim ${{ github.ref_name }}
+          draft: false
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: dist/*
+          body: |
+            DeviceSim ${{ github.ref_name }} 安装包。
+
+            - **macOS**：下载 `.dmg` 打开安装
+            - **Windows**：下载 `.msi` 或 setup `.exe` 安装
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: DeviceSim ${{ github.ref_name }}
-          releaseDraft: true
-          includeUpdaterJson: false
-          githubBaseUrl: ${{ github.api_url }}
-          isGitea: ${{ github.server_url != 'https://github.com' }}
