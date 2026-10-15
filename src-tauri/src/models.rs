@@ -451,8 +451,9 @@ pub struct ModbusRegisterDef {
     pub name: String,
     #[serde(default)]
     pub table: ModbusTable,
+    /// PLC / 界面地址。协议地址由从站的 `address_offset` 换算，可为 40001、400001 这类编号。
     #[serde(default)]
-    pub address: u16,
+    pub address: u32,
     #[serde(default = "default_uint16")]
     pub data_type: FieldType,
     #[serde(default)]
@@ -504,6 +505,18 @@ pub struct ModbusTcpSlaveConfig {
     pub port: u16,
     #[serde(default = "default_unit")]
     pub unit_id: u8,
+    /// 协议地址 = 寄存器地址 − 偏移量。0 表示两者相同；1 表示地址从 1 起；40001 表示 40001 对应协议地址 0。
+    #[serde(default)]
+    pub address_offset: i32,
+    /// 为 false 时，该表的寄存器地址直接作为协议地址，不减去 `address_offset`。
+    #[serde(default = "default_true")]
+    pub coils_use_offset: bool,
+    #[serde(default = "default_true")]
+    pub discrete_inputs_use_offset: bool,
+    #[serde(default = "default_true")]
+    pub holding_registers_use_offset: bool,
+    #[serde(default = "default_true")]
+    pub input_registers_use_offset: bool,
     #[serde(default = "default_table_size")]
     pub coils_size: usize,
     #[serde(default = "default_table_size")]
@@ -544,6 +557,11 @@ impl Default for ModbusTcpSlaveConfig {
             host: default_bind(),
             port: 5020,
             unit_id: 1,
+            address_offset: 0,
+            coils_use_offset: true,
+            discrete_inputs_use_offset: true,
+            holding_registers_use_offset: true,
+            input_registers_use_offset: true,
             coils_size: 2000,
             discrete_inputs_size: 2000,
             holding_registers_size: 2000,
@@ -552,6 +570,26 @@ impl Default for ModbusTcpSlaveConfig {
             identity_product: default_product(),
             identity_version: default_version(),
             registers: vec![],
+        }
+    }
+}
+
+impl ModbusTcpSlaveConfig {
+    /// 该表是否套用地址偏移。未套用时协议地址等于寄存器地址。
+    pub fn uses_address_offset(&self, table: &ModbusTable) -> bool {
+        match table {
+            ModbusTable::Coils => self.coils_use_offset,
+            ModbusTable::DiscreteInputs => self.discrete_inputs_use_offset,
+            ModbusTable::HoldingRegisters => self.holding_registers_use_offset,
+            ModbusTable::InputRegisters => self.input_registers_use_offset,
+        }
+    }
+
+    pub fn offset_for(&self, table: &ModbusTable) -> i32 {
+        if self.uses_address_offset(table) {
+            self.address_offset
+        } else {
+            0
         }
     }
 }

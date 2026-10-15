@@ -148,6 +148,13 @@ export interface ModbusTcpSlaveConfig {
   host: string;
   port: number;
   unit_id: number;
+  /** 协议地址 = 寄存器地址 − 偏移量。缺省按 0 处理。 */
+  address_offset?: number;
+  /** 缺省为 true。为 false 时该表不套用地址偏移。 */
+  coils_use_offset?: boolean;
+  discrete_inputs_use_offset?: boolean;
+  holding_registers_use_offset?: boolean;
+  input_registers_use_offset?: boolean;
   coils_size: number;
   discrete_inputs_size: number;
   holding_registers_size: number;

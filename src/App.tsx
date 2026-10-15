@@ -41,6 +41,12 @@ const MODBUS_FNS = [
 ] as const;
 
 const TABLES = ["coils", "discrete_inputs", "holding_registers", "input_registers"] as const;
+const TABLE_LABELS: Record<(typeof TABLES)[number], string> = {
+  coils: "线圈",
+  discrete_inputs: "离散输入",
+  holding_registers: "保持寄存器",
+  input_registers: "输入寄存器",
+};
 const BYTE_ORDERS = ["ABCD", "CDAB", "BADC", "DCBA"] as const;
 
 /** 数字输入：允许清空后重输，避免 Number("") 变成 0 打断编辑 */
@@ -48,6 +54,37 @@ function parseNumberInput(raw: string, fallback: number): number {
   if (raw.trim() === "") return fallback;
   const n = Number(raw);
   return Number.isFinite(n) ? n : fallback;
+}
+
+function parseI32(raw: string, fallback: number): number {
+  const n = Math.trunc(parseNumberInput(raw, fallback));
+  if (n > 2147483647) return 2147483647;
+  if (n < -2147483648) return -2147483648;
+  return n;
+}
+
+function tableUsesOffset(
+  cfg: NonNullable<SimInstance["modbus_slave"]>,
+  table: (typeof TABLES)[number],
+): boolean {
+  switch (table) {
+    case "coils":
+      return cfg.coils_use_offset !== false;
+    case "discrete_inputs":
+      return cfg.discrete_inputs_use_offset !== false;
+    case "holding_registers":
+      return cfg.holding_registers_use_offset !== false;
+    case "input_registers":
+      return cfg.input_registers_use_offset !== false;
+  }
+}
+
+/** 协议地址 = 寄存器地址 − 偏移量，须落在 0–65535。 */
+function protocolAddress(address: number, offset: number): number | null {
+  if (!Number.isFinite(address) || !Number.isFinite(offset)) return null;
+  const proto = address - offset;
+  if (!Number.isInteger(proto) || proto < 0 || proto > 65535) return null;
+  return proto;
 }
 
 function formatConstValue(value: unknown): string {
@@ -1344,6 +1381,43 @@ function ModbusSlaveEditor({
             }
           />
         </label>
+        <label className="field">
+          地址偏移量
+          <input
+            type="number"
+            step={1}
+            value={cfg.address_offset ?? 0}
+            onChange={(e) =>
+              onChange({
+                ...cfg,
+                address_offset: parseI32(e.target.value, cfg.address_offset ?? 0),
+              })
+            }
+          />
+        </label>
+      </div>
+      <p className="muted" style={{ margin: "0.45rem 0 0" }}>
+        协议地址 = 寄存器地址 − 偏移量。填 0 时两者相同；填 1 时地址 1 对应协议地址 0；填 40001 或
+        400001 时，该编号对应协议地址 0。取消勾选的表不套用偏移，寄存器地址直接作为协议地址。
+      </p>
+      <div className="row" style={{ marginTop: "0.45rem", flexWrap: "wrap" }}>
+        {(
+          [
+            ["coils_use_offset", "线圈"],
+            ["discrete_inputs_use_offset", "离散输入"],
+            ["holding_registers_use_offset", "保持寄存器"],
+            ["input_registers_use_offset", "输入寄存器"],
+          ] as const
+        ).map(([key, label]) => (
+          <label key={key} className="field" style={{ flexDirection: "row", alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={cfg[key] !== false}
+              onChange={(e) => onChange({ ...cfg, [key]: e.target.checked })}
+            />
+            {label}使用偏移量
+          </label>
+        ))}
       </div>
       <div className="row" style={{ justifyContent: "space-between", marginTop: "0.75rem" }}>
         <p className="section-title" style={{ margin: 0 }}>
@@ -1358,7 +1432,10 @@ function ModbusSlaveEditor({
           还没有寄存器映射，点击「添加寄存器」。
         </p>
       )}
-      {registers.map((reg, idx) => (
+      {registers.map((reg, idx) => {
+        const offset = tableUsesOffset(cfg, reg.table) ? (cfg.address_offset ?? 0) : 0;
+        const proto = protocolAddress(reg.address, offset);
+        return (
         <div className="card" key={idx}>
           <div className="field-grid">
             <label className="field">
@@ -1378,7 +1455,7 @@ function ModbusSlaveEditor({
               >
                 {TABLES.map((t) => (
                   <option key={t} value={t}>
-                    {t}
+                    {TABLE_LABELS[t]}
                   </option>
                 ))}
               </select>
@@ -1392,6 +1469,7 @@ function ModbusSlaveEditor({
                   patchReg(idx, { address: parseNumberInput(e.target.value, reg.address) })
                 }
               />
+              <span>{proto === null ? "协议地址无效" : `协议地址 ${proto}`}</span>
             </label>
             <label className="field">
               数据类型
@@ -1488,7 +1566,8 @@ function ModbusSlaveEditor({
             </button>
           </div>
         </div>
-      ))}
+        );
+      })}
       <button className="btn" type="button" onClick={addRegister} style={{ marginTop: "0.5rem" }}>
         添加寄存器
       </button>
