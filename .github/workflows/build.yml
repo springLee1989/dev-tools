@@ -7,6 +7,9 @@ on:
 
 jobs:
   build:
+    # Default GITHUB_TOKEN is read-only; creating/uploading a release needs write.
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -36,3 +39,5 @@ jobs:
           releaseName: DeviceSim ${{ github.ref_name }}
           releaseDraft: true
           includeUpdaterJson: false
+          githubBaseUrl: ${{ github.api_url }}
+          isGitea: ${{ github.server_url != 'https://github.com' }}
